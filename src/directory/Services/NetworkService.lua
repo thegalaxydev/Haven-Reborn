@@ -5,9 +5,13 @@ local Event = require(script.Parent.Parent.Classes.Event)
 local RemoteEvent = Instance.new("RemoteEvent")
 local RemoteFunction = Instance.new("RemoteFunction")
 
-local ServerNetwork = Instance.new("Folder")
-ServerNetwork.Name = "ServerNetwork"
-ServerNetwork.Parent = game:GetService("ServerStorage")
+local ServerNetwork = nil
+
+if RunService:IsServer() then
+	ServerNetwork = Instance.new("Folder")
+	ServerNetwork.Name = "ServerNetwork"
+	ServerNetwork.Parent = game:GetService("ServerStorage")
+end
 
 local Bindable = Event.new()
 
@@ -92,38 +96,44 @@ local Methods = {
 }
 
 function NetworkService.Create(name: string, class: string, connection: string, func: ()->())
-	if script:FindFirstChild(name) == nil then
+	local parent = script
+
+	if RunService:IsServer() then
+		parent = ServerNetwork
+	end
+	
+	if parent:FindFirstChild(name) == nil then
 		local obj = Instance.new(class)
 		obj.Name = name		
 						
 		if connection and func then
 			if class == "BindableEvent" or class == "RemoteEvent" then
 				local event = obj[connection]:connect(func)
-				obj.Parent = script
+				obj.Parent = parent
 				
 				return obj, event
 			elseif class == "BindableFunction" or class == "RemoteFunction" then
 				obj[connection] = func
-				obj.Parent = script
+				obj.Parent = parent
 				
 				return obj
 			end
 		end
 		
-		obj.Parent = script
+		obj.Parent = parent
 
 		return obj
 	else
-		local obj = script[name]
+		local obj = parent[name]
 		if connection ~= nil and func ~= nil then
 			if class == "BindableEvent" or class == "RemoteEvent" then
 				local event = obj[connection]:connect(func)
-				obj.Parent = script
+				obj.Parent = parent
 				
 				return obj, event
 			elseif class == "BindableFunction" or class == "RemoteFunction" then
 				obj[connection] = func
-				obj.Parent = script
+				obj.Parent = parent
 				
 				return obj
 			end
@@ -139,9 +149,9 @@ function NetworkService:Connect(name: string, connection: string, func: ()->())
 	if RunService:IsServer() then
 		if connection == "OnServerInvoke" then
 			connection = "OnInvoke"
-			obj = game.ServerStorage.serverNetwork:WaitForChild(name)	
+			obj = game.ServerStorage.ServerNetwork:WaitForChild(name)	
 		elseif connection == "Event" or connection == "OnInvoke" then
-			obj = game.ServerStorage.serverNetwork:WaitForChild(name)	
+			obj = game.ServerStorage.ServerNetwork:WaitForChild(name)	
 		else
 			obj = script:WaitForChild(name)
 		end
