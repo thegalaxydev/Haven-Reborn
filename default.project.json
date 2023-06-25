@@ -1,0 +1,30 @@
+{
+  "name": "MinersHaven2",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "Directory": {
+        "$path": "src/directory"
+      },
+      "Storage": {
+        "$path": "src/storage",
+        "$ignoreUnknownInstances": true
+      }
+    },
+
+    "ServerScriptService": {
+      "Galaxy_Server": {
+        "$path": "src/server"
+      }
+    },
+
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Galaxy_Client": {
+          "$path": "src/client"
+        }
+      }
+    }
+  }
+}
