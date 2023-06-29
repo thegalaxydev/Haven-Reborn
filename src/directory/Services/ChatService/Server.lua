@@ -3,17 +3,6 @@ local TextService = game:GetService("TextService")
 local Directory = require(ReplicatedStorage:FindFirstChild("Directory"))
 
 local ChatMessage = Directory.Retrieve("Classes/ChatMessage")
-local Remotes = Instance.new("Folder")
-Remotes.Name = "Remotes"
-Remotes.Parent = ReplicatedStorage
-
-local ServerReplicator = Instance.new("RemoteFunction")
-ServerReplicator.Name = "ServerReplicator"
-ServerReplicator.Parent = Remotes
-
-local ClientReplicator = Instance.new("RemoteEvent")
-ClientReplicator.Name = "ClientReplicator"
-ClientReplicator.Parent = Remotes
 
 local CommandService = Directory.Retrieve("Services/CommandService")
 local NameColorService = Directory.Retrieve("Services/NameColorService")
@@ -164,6 +153,8 @@ BoxListLayout.FillDirection = Enum.FillDirection.Horizontal
 BoxListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 BoxListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 
+local NetworkService = Directory.Retrieve("Services/NetworkService")
+
 local ReplicationFunctions = {
 	["SendMessage"] = function(player: Player, message: string, recipient: Player?)
 		if message == "" then return end
@@ -189,7 +180,7 @@ local ReplicationFunctions = {
 			messageObject.Message = result:GetChatForUserAsync(recipient.UserId)
 
 		
-			ClientReplicator:FireClient(recipient, "ReceiveMessage", messageObject)
+			NetworkService.Fire("ReceiveMessage", recipient, messageObject)
 		else
 			for _, recipient in pairs(game.Players:getPlayers()) do
 				local filteredMessage = ""
@@ -202,9 +193,8 @@ local ReplicationFunctions = {
 				else
 					messageObject.Message = filteredMessage
 				end
-				
-				print(message)
-				ClientReplicator:FireClient(recipient, "ReceiveMessage", messageObject)
+
+				NetworkService.Fire("ReceiveMessage", recipient, messageObject)
 			end
 			
 		end
@@ -221,16 +211,20 @@ local ReplicationFunctions = {
 	end,
 
 	["ExecuteCommand"] = function(player: Player, command: string, args: {any})
-		CommandService.ExecuteCommand(player, command, args)
+		local success, msg = CommandService.ExecuteCommand(player, command, args)
+		
+		if not success then
+			NetworkService.Fire("ReceiveMessage", player, ChatMessage.new(msg, Enum.Font.SourceSansBold, Color3.fromRGB(255, 0, 0)))
+			return false
+		end
+
+		return true
 	end
 }
 
-ServerReplicator.OnServerInvoke = function(player: Player, func: string, ...)
-	if ReplicationFunctions[func] then
-		return ReplicationFunctions[func](player, ...)
-	end
-	
-	return nil
+for name, func in pairs(ReplicationFunctions) do
+	NetworkService.Create(name, func)
 end
+
 
 return true

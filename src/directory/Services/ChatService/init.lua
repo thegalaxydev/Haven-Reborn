@@ -9,10 +9,8 @@ type ChatMessage = ChatMessage.ChatMessage
 
 
 if RunService:IsServer() then
-	print("server")
 	require(script.Server)
 else
-	print("client")
 	require(script.Client)
 end
 

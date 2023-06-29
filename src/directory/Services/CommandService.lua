@@ -3,8 +3,6 @@ local CommandService = {}
 CommandService.Commands = {}
 
 local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 function CommandService.RegisterCommand(command: string, callback: (player: Player, args: {string}) -> boolean)
 	CommandService.Commands[command] = callback

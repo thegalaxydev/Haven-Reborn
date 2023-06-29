@@ -339,7 +339,7 @@ function BigNumber.new(num: string? | number?)
 	return self
 end
 
-function BigNumber:Unserialize(outputType : string?, precision: number?)
+function BigNumber:Unserialize(outputType : string?, precision: number?) : (number? | string, string)
 	self:Check()
 
     local num = ""
@@ -360,9 +360,9 @@ function BigNumber:Unserialize(outputType : string?, precision: number?)
         if ((outputType == nil)
         or (outputType == "number")
         or (outputType == "n")) then
-            return tonumber(num)
+            return tonumber(num), ""
         else
-            return num
+            return num, ""
         end
 
     else
@@ -376,35 +376,35 @@ function BigNumber:Unserialize(outputType : string?, precision: number?)
         end
 
 
-		local count = 0
-		for _, n in pairs(Suffixes) do
-			count+=1
-		end
+		local count = #Suffixes
 		
 		local walkback = (#self.Digits - 1) % 3
-
+		
 		local suffix = ""
 		num = self.Digits[1]
-
-		if count >= (#self.Digits / 3) - (walkback + 1) then
-			for i = 1 + walkback, (#self.Digits / 3), 1 do
-				suffix = Suffixes[i]
+		
+		if count >= math.floor((#self.Digits - 1) / 3) - walkback then
+			local index = math.floor((#self.Digits - walkback - 1) / 3)
+			
+			if Suffixes[index] then
+				suffix = Suffixes[index]
 			end
-
-			for i = 2, walkback + 1, 1 do
-				num = num .. self.Digits[i]
+			
+			for i = 1, walkback do
+				num = num .. self.Digits[i + 1]
 			end
-
+			
 			if precision and precision > 1 then
 				num = num .. "." 
-				for i = 1, precision + 1 + walkback do
-					num = num .. self.Digits[i] or 0
+				for i = 2 + walkback, precision + walkback do
+					if self.Digits[i] and self.Digits[i] ~= "0" then
+						num = num .. self.Digits[i]
+					end
 				end
 			end
-
-			return num .. " ".. suffix
-		end
 		
+			return num , suffix
+		end
 		if precision and precision > 1 then
 			num = num .. "." 
 			for i = 1, precision + 1 + walkback do
@@ -412,7 +412,7 @@ function BigNumber:Unserialize(outputType : string?, precision: number?)
 			end
 		end
 
-		return num .. "*10e" .. (#self.Digits - 1)
+		return num .. "*10e" .. (#self.Digits - 1),""
     end
 end
 
@@ -448,7 +448,7 @@ function BigNumber:MultiplySingle(rhs: BigNumber)
     self:Check()
     BigNumber.Check(rhs)
 
-    assert(#rhs.Digits == 1, BigNumber.Unserialize(rhs, "string")
+    assert(#rhs.Digits == 1, BigNumber.Unserialize(rhs, "string") :: string
                               .. " has more than one digit")
 
     local result = BigNumber.new()

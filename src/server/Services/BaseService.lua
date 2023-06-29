@@ -43,7 +43,7 @@ function BaseService.LoadBaseForPlayer(player: Player)
 	local BaseData = PlayerData["SaveSlot1"]["BaseData"]
 	local BaseSize = BaseData.BaseSize
 
-	Plot.Base.Size = Vector3.new(BaseSize.X * 3, 0.2, BaseSize.Y * 3)
+	Plot.Base.Size = Vector3.new(BaseSize.X * 3, Plot.Base.Size.Y, BaseSize.Y * 3)
 	
 	local PlayerPlot = Instance.new("ObjectValue")
 	PlayerPlot.Name = "PlayerPlot"
@@ -67,7 +67,7 @@ function BaseService.UnloadBaseForPlayer(player: Player)
 				Item:Destroy()
 			end
 
-			Plot:FindFirstChild("Base").Size = Vector3.new(75, 0.2, 75)
+			Plot:FindFirstChild("Base").Size = Vector3.new(75, 1, 75)
 		end
 	end
 end

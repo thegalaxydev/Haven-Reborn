@@ -3,68 +3,80 @@ Placeable.__index = Placeable
 
 export type Placeable = typeof(setmetatable({}, Placeable))
 
--- A placeable is any object that can be placed in the gridspace.
-function Placeable.new(name: string, model: Model)
-	local self = setmetatable({}, Placeable)
+export type PlaceableInformation = {
+	Name: string,
+	Model: Model,
+	ID: number,
+	Image: string,
+	Description: string,
+	Tier: string,
+	Cost: number | string,
+	SellPrice: number | string
+}
 
-	self.Model = model
-	self.Name = name
+-- A placeable is any object that can be placed in the gridspace.
+function Placeable.new(placeableInformation: PlaceableInformation)
+	local self = setmetatable(placeableInformation, Placeable)
 
 	self.Owner = nil
-	
+
 	return self
 end
 
-function isColliding(part1: BasePart, position: Vector3, size: Vector3)
-	return part1.Position.X < position.X + size.X and
-		part1.Position.X + part1.Size.X > position.X and
-		part1.Position.Z < position.Z + size.Z and
-		part1.Size.Z + part1.Position.Z > position.Z
+function Placeable:Clone()
+	return Placeable.new({
+		Name = self.Name, 
+		Model = self.Model:Clone(),
+		ID = self.ID,
+		Image = self.Image,
+		Description = self.Description,
+		Tier = self.Tier,
+		Cost = self.Cost,
+		SellPrice = self.SellPrice
+	})
 end
 
-function Placeable:Place(player: Player, plot: Model, gridPosition: Vector2, gridRotation: number) : (Placeable?, Model?)
-	local items = plot:FindFirstChild("Items")
-	local base = plot:FindFirstChild("Base")
+function Placeable:IsColliding()
+	local isColliding = false
 
-	if gridPosition.X < 0 then
-		gridPosition = Vector2.new(0, gridPosition.Y)
-	end
+	local primaryPart = self.Model.PrimaryPart or self.Model:FindFirstChild("Hitbox")
 
-	if gridPosition.Y < 0 then
-		gridPosition = Vector2.new(gridPosition.X, 0)
-	end
-
-	if gridPosition.X > base.Size.X / 3 then
-		gridPosition = Vector2.new(base.Size.X / 3, gridPosition.Y)
-	end
-
-	if gridPosition.Y > base.Size.Z / 3 then
-		gridPosition = Vector2.new(gridPosition.X, base.Size.Z / 3)
-	end
+	local touch = primaryPart.Touched:Connect(function() end)
+	local touching = primaryPart:GetTouchingParts()
 	
-	local hitbox = self.Model:FindFirstChild("Hitbox")
-
-	local posX = base.Position.X + (gridPosition.X * 3) - (base.Size.X / 2) + (hitbox.Size.X / 2)
-	local posY = base.Position.Y + (hitbox.Size.Y / 2)
-	local posZ = base.Position.Z + (gridPosition.Y * 3) - (base.Size.Z / 2) + (hitbox.Size.Z / 2)
-
-
-	for _, child in pairs(items:GetChildren()) do
-		if isColliding(child.Hitbox, Vector3.new(posX, posY, posZ), hitbox.Size) then
-			return
+	for i = 1, #touching do
+		if (not touching[i]:IsDescendantOf(self.Model) and touching[i].Name == "Hitbox") then
+			isColliding = true
+			break
 		end
 	end
 
-	local newModel = self.Model:Clone()
-	newModel.Parent = items
+	-- cleanup and return
+	touch:Disconnect()
+	return isColliding
+end
 
-	local newPlaceable = Placeable.new(self.Name, newModel)
+function Placeable:Place(player: Player, plot: Model, cf: CFrame) : (Placeable?, Model?)
+	local items = plot:FindFirstChild("Items")
+	local base = plot:FindFirstChild("Base")
+
+	if plot:GetAttribute("Owner") ~= player.UserId then
+		return nil, nil
+	end
+
+	local newPlaceable = self:Clone()
+	newPlaceable.Model.Parent = items
 
 	newPlaceable.Owner = player
 	
-	newModel:PivotTo(CFrame.new(Vector3.new(posX, posY, posZ)) * CFrame.Angles(0, math.rad(gridRotation * 90), 0))
+	newPlaceable.Model:PivotTo(cf)
 
-	return newPlaceable, newModel
+	if self:IsColliding() then
+		newPlaceable.Model:Destroy()
+		return nil, nil
+	end
+
+	return newPlaceable, newPlaceable.Model
 end
 
 return Placeable

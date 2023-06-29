@@ -20,9 +20,6 @@ export type DataStoreParameters = {
 	DefaultData: {[any]: any}?
 }
 
-task.spawn(function()
-
-end)
 function DataStoreInstance.new(params: DataStoreParameters) : DataStoreInstance
 	local self = setmetatable({}, DataStoreInstance)
 	

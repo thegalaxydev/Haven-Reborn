@@ -1,5 +1,4 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
 
 local Directory = require(ReplicatedStorage:FindFirstChild("Directory"))
@@ -11,10 +10,10 @@ local CommandService = Directory.Retrieve("Services/CommandService")
 
 local TextService = game:GetService("TextService")
 local ContextActionService = game:GetService("ContextActionService")
-local Replicator = Remotes:WaitForChild("ClientReplicator")
-local ServerReplicator = Remotes:WaitForChild("ServerReplicator")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
+
+local NetworkService = Directory.Retrieve("Services/NetworkService")
 
 local UserInputService = game:GetService("UserInputService")
 
@@ -64,7 +63,7 @@ TextBox.PlaceholderText = "To chat press here or press \"/\" key."
 TextBox.RichText = true
 BoxHolder.Size = UDim2.new(1,0, 0, TextBox.TextBounds.Y + 20)
 
-CommandService.Commands = ServerReplicator:InvokeServer("GetCommands")
+CommandService.Commands = NetworkService.Fire("GetCommands")
 
 function escapeText(str: string) : string
 	return str:gsub("[<>\"'&]",{
@@ -246,13 +245,9 @@ local ReplicationFunctions = {
 	end
 }
 
-Replicator.OnClientEvent:Connect(function(func: string, ...)
-	if ReplicationFunctions[func] then
-		ReplicationFunctions[func](...)
-	end
-	
-	return nil
-end)
+for name, func in pairs(ReplicationFunctions) do
+	NetworkService.Create(name, func)
+end
 
 function sendChat()
 	if TextBox.Text == "" then
@@ -266,7 +261,7 @@ function sendChat()
 		args[i-1] = split[i]
 	end
 	 if table.find(CommandService.Commands, command) then
-		ServerReplicator:InvokeServer("ExecuteCommand", command, args)
+		NetworkService.Fire("ExecuteCommand", command, args)
 
 		TextBox.Text = ""
 
@@ -274,7 +269,7 @@ function sendChat()
 		return
 	end
 
-	ServerReplicator:InvokeServer("SendMessage", TextBox.Text)
+	NetworkService.Fire("SendMessage", TextBox.Text)
 	TextBox.Text = ""	
 end
 

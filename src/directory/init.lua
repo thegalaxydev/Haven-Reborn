@@ -2,11 +2,8 @@ local Directory = {}
 
 Directory.Cache = {}
 
-function Directory.GetClass<T>() : T?
-	return nil
-end
 
-function Directory.Retrieve(path: string) : ({}? | Instance, string)
+function Directory.Retrieve<T>(path: string) : (T? | Instance, string)
 	local split = string.split(path, "/")
 	local current = script
 	for i = 1, #split do
@@ -20,8 +17,11 @@ function Directory.Retrieve(path: string) : ({}? | Instance, string)
 	if not current then return nil, "Path not found." end
 
 	if current:IsA("ModuleScript") then
-		return require(current), "Module retrieved."
+		current = require(current)
+		return current :: typeof(current), "Module retrieved."
 	end
+
+	
 
 	return current, "Directory retrieved."
 end

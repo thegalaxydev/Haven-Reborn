@@ -5,6 +5,15 @@ local Placeable = Directory.Retrieve("Classes/Placeable")
 local Storage = ReplicatedStorage:FindFirstChild("ModelStorage")
 local Model = Storage:FindFirstChild(script.Name)
 
-local TestPlaceable = Placeable.new("Test", Model)
+local TestPlaceable = Placeable.new{
+	Name = "Test", 
+	Model = Model,
+	ID = 1,
+	Image = "rbxassetid://0",
+	Description = "This is a test item.",
+	Tier = 1,
+	Cost = 0,
+	SellPrice = 0
+}
 
 return TestPlaceable
