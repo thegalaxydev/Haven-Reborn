@@ -3,6 +3,7 @@ local PlacementService = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Directory = require(ReplicatedStorage:FindFirstChild("Directory"))
 local Placeable = require(ReplicatedStorage.Directory.Classes.Placeable)
+local Event = Directory.Retrieve("Classes/Event")
 
 local NetworkService = Directory.Retrieve("Services/NetworkService")
 
@@ -16,6 +17,8 @@ local ContextActionService = game:GetService("ContextActionService")
 
 local PlayerGui = Player.PlayerGui
 
+
+PlacementService.PlacementEnded = Event.new()
 
 local ghost = nil
 
@@ -58,6 +61,8 @@ function PlacementService.IsColliding(model)
 
 	local primaryPart = model.PrimaryPart or model:FindFirstChild("Hitbox")
 
+	if not primaryPart then return end
+
 	-- must have a touch interest for the :GetTouchingParts() method to work
 	local touch = primaryPart.Touched:Connect(function() end)
 	local touching = primaryPart:GetTouchingParts()
@@ -85,12 +90,18 @@ function PlacementService.CancelPlacement()
 		ghost:Destroy()
 	end
 
+	for _, item in pairs(base.Parent.Items:GetChildren()) do
+		local itemSelectionBox = item.Hitbox:FindFirstChild("SelectionBox")
+		if not itemSelectionBox then continue end
+		itemSelectionBox:Destroy()
+	end
+
 	RunService:UnbindFromRenderStep("PlaceItem")
 	ContextActionService:UnbindAction("Place")
 	ContextActionService:UnbindAction("Rotate")
 	ContextActionService:UnbindAction("Cancel")
 
-	PlayerGui.Main.Enabled = true
+	PlacementService.PlacementEnded:Fire()
 end
 
 NetworkService.Create("CancelPlaceItem", function()
@@ -111,12 +122,25 @@ function PlacementService.BeginPlacement(item: Placeable.Placeable)
 
 	local hitbox : BasePart = ghost.Hitbox
 
-	local selectionBox = hitbox:FindFirstChild("SelectionBox") :: SelectionBox
+	local selectionBox = Instance.new("SelectionBox")
+	selectionBox.Name = "SelectionBox"
+	selectionBox.LineThickness = 0.15
+	selectionBox.Parent = hitbox
 	selectionBox.Adornee = hitbox
 	selectionBox.Transparency = 0
 	selectionBox.SurfaceTransparency= 0.8
 
 	local base = Player.PlayerPlot.Value.Base
+
+	for _, item in pairs(base.Parent.Items:GetChildren()) do
+		local itemSelectionBox = Instance.new("SelectionBox")
+		itemSelectionBox.Name = "SelectionBox"
+		itemSelectionBox.LineThickness = 0.15
+		itemSelectionBox.Parent = item.Hitbox
+		itemSelectionBox.Adornee = item.Hitbox
+		itemSelectionBox.Transparency = 0
+		itemSelectionBox.SurfaceTransparency= 0.8
+	end
 
 	if not base then 
 		PlacementService.CancelPlacement()
@@ -147,6 +171,13 @@ function PlacementService.BeginPlacement(item: Placeable.Placeable)
 			if PlacementService.IsColliding(ghost) then 
 				print("Collided")
 				return 
+			end
+
+			for _, item in pairs(base.Parent.Items:GetChildren()) do
+				local itemSelectionBox = item.Hitbox:FindFirstChild("SelectionBox")
+				itemSelectionBox.Adornee = item.Hitbox
+				itemSelectionBox.Transparency = 0
+				itemSelectionBox.SurfaceTransparency= 0.8
 			end
 
 			local rayParams = RaycastParams.new()

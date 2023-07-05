@@ -15,6 +15,7 @@ return Dropper.new{
 	Cost = 100,
 	DropRate = 0.5,
 	DropSize = 1,
+	ShopCategory = "Droppers",
 	DropWorth = 100,
 	SellPrice = 50,
 

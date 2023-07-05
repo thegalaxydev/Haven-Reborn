@@ -9,15 +9,26 @@ export type PlaceableInformation = {
 	ID: number,
 	Image: string,
 	Description: string,
-	Tier: string,
+	Tier: number,
 	Cost: number | string,
-	SellPrice: number | string
+	SellPrice: number | string,
+	ShopCategory: string?,
 }
 
 -- A placeable is any object that can be placed in the gridspace.
 function Placeable.new(placeableInformation: PlaceableInformation)
-	local self = setmetatable(placeableInformation, Placeable)
+	local self = setmetatable({}, Placeable)
 
+	self.Name = placeableInformation.Name
+	self.Model = placeableInformation.Model
+	self.ID = placeableInformation.ID
+	self.Image = placeableInformation.Image or ""
+	self.Description = placeableInformation.Description or ""
+	self.Tier = placeableInformation.Tier or 1
+	self.Cost = placeableInformation.Cost or 0
+	self.SellPrice = placeableInformation.SellPrice or 0
+	self.ShopCategory = placeableInformation.ShopCategory
+	
 	self.Owner = nil
 
 	return self

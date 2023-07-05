@@ -16,6 +16,8 @@ if RunService:IsServer() then
 	ServerReplicator.Parent = Remotes
 
 	ServerReplicator.OnServerInvoke = function(player: Player, name: string, ...)
+		print(name, NetworkService.ServerCallbacks)
+
 		if not NetworkService.ServerCallbacks[name] then return nil end
 		
 		return NetworkService.ServerCallbacks[name](player, ...)

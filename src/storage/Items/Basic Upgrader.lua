@@ -9,7 +9,7 @@ return Upgrader.new{
 	Name = "Basic Upgrader", 
 	Model = Model,
 	ID = 4,
-	Image = "rbxassetid://205328631",
+	Image = "rbxassetid://211364004",
 	Description = "Basic Upgrader Test",
 	ConveyorSpeed = 10,
 	Tier = 1,
@@ -17,6 +17,7 @@ return Upgrader.new{
 	DropRate = 0.5,
 	DropSize = 1,
 	DropWorth = 100,
+	ShopCategory = "Upgraders",
 	SellPrice = 50,
 
 	UpgradeCallback = function(self, model, hit: BasePart, player: Player)

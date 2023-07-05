@@ -16,59 +16,49 @@ local DeveloperList = {
 	1319532389
 }
 
-local defaultData = {
-	["Money"] = "500",
-	["Unobtanium"] = 0,
-	-- I'm not using RP it's a dumb mechanic
-	--["RP"] = 0
-
-	-- Crates
-	["Crates"] = {
-		["Regular"] = 0,
-		["Unreal"] = 0,
-		["Inferno"] = 0,
-		["Exotic"] = 0,
-		["Holiday"] = 0,
-		["Godly"] = 0,
-		["Galaxy"] = 0
-	},
-
-	["SacrificeLevel"] = 0,
-	["LifeCount"] = 1,
-
-	["Clovers"] = {
-		["Regular"] = 0,
-		["Gold"] = 0
-	},
-
-	Inventory = {},
-
-	["BaseData"] = {
-		PlacementInformation = {},
-
-		-- Default size IN 3x3 GRID SQUARES NOT STUDS
-		BaseSize = {X = 25, Y = 25}
-	}
-}
-
 PlayerService.PlayerData = DataService.CreateDataStoreInstance {
 	Name = "PlayerData",
 	ShouldAutoSave = true,
 	AutoSaveInterval = 60,
 
-	DefaultData = {
-		["SaveSlot1"] = table.clone(defaultData),
-		["SaveSlot2"] = table.clone(defaultData),
-		["SaveSlot3"] = table.clone(defaultData),
-		["SaveSlot4"] = table.clone(defaultData),
-		["SaveSlot5"] = table.clone(defaultData),
-		["SaveSlot6"] = table.clone(defaultData),
-		["SaveSlot7"] = table.clone(defaultData),
-		["SaveSlot8"] = table.clone(defaultData),
-		["SaveSlot9"] = table.clone(defaultData),
-		["SaveSlot10"] = table.clone(defaultData),
-
-	}
+	DefaultData = (function()
+		local maxSaveSlots = 10
+		local defaultData = {}
+		for i = 1, maxSaveSlots do
+			defaultData[`SaveSlot{i}`] = table.clone({
+				["Money"] = "500",
+				["Unobtanium"] = 0,
+				-- I'm not using RP it's a dumb mechanic
+				--["RP"] = 0
+			
+				-- Crates
+				["Crates"] = {
+					["Regular"] = 0,
+					["Unreal"] = 0,
+					["Inferno"] = 0,
+					["Exotic"] = 0,
+					["Holiday"] = 0,
+					["Godly"] = 0,
+					["Galaxy"] = 0
+				},
+			
+				["SacrificeLevel"] = 0,
+				["LifeCount"] = 1,
+			
+				["Clovers"] = {
+					["Regular"] = 0,
+					["Gold"] = 0
+				},
+			
+				Inventory = {},
+			
+				["BaseData"] = {
+					PlacementInformation = {},
+				}
+			})
+		end
+		return defaultData
+	end)()
 }
 
 function PlayerService.CharacterAdded(character: Model, player: Player)
@@ -81,6 +71,10 @@ function PlayerService.CharacterAdded(character: Model, player: Player)
 end
 
 function PlayerService.PlayerAdded(player: Player)
+	for _, player in pairs(game.Players:GetPlayers()) do
+		NetworkService.Fire("UpdateLeaderboard", player)
+	end
+	
 	player.CharacterAdded:Connect(function(character)
 		PlayerService.CharacterAdded(character, player)
 	end)	
@@ -91,11 +85,10 @@ function PlayerService.PlayerAdded(player: Player)
 		{3, 1},
 		{2, 20},
 		{4, 1},
-		{5, 1}
+		{5, 1},
+		{6, 1}
 	}
 
-	
-	
 	local PlayerDataLoaded = Instance.new("BoolValue")
 	PlayerDataLoaded.Name = "PlayerDataLoaded"
 	PlayerDataLoaded.Parent = player
@@ -105,7 +98,7 @@ function PlayerService.PlayerAdded(player: Player)
 	CurrentSaveSlot.Value = "SaveSlot1"
 	CurrentSaveSlot.Parent = player
 
-	PlayerData[CurrentSaveSlot.Value]["Money"] = "1"..("0"):rep(312)
+	PlayerData[CurrentSaveSlot.Value]["Money"] = "1000"
 
 	local Money = Instance.new("StringValue")
 	Money.Name = "Money"
@@ -113,12 +106,46 @@ function PlayerService.PlayerAdded(player: Player)
 
 	Money.Value = PlayerData[CurrentSaveSlot.Value]["Money"] 
 
+	Money.Changed:Connect(function()
+		PlayerData[CurrentSaveSlot.Value]["Money"] = Money.Value
+
+		for _, player in pairs(game.Players:GetPlayers()) do
+			NetworkService.Fire("UpdateLeaderboard", player)
+		end
+	end)
+
+	local Life = Instance.new("NumberValue")
+	Life.Name = "Life"
+	Life.Parent = player
+
+	Life.Value = PlayerData[CurrentSaveSlot.Value]["LifeCount"] 
+
+	Life.Changed:Connect(function()
+		PlayerData[CurrentSaveSlot.Value]["LifeCount"] = Life.Value
+		
+		for _, player in pairs(game.Players:GetPlayers()) do
+			NetworkService.Fire("UpdateLeaderboard", player)
+		end
+	end)
 
 	BaseService.LoadBaseForPlayer(player)
 end
 
 function PlayerService.PlayerRemoving(player: Player)
+	local basePlacement = BaseService.SerializeBaseForPlayer(player)
+
+	local playerData = PlayerService.PlayerData:GetData(player.UserId)
+
+	local currentSaveSlot = (player:FindFirstChild("CurrentSaveSlot") :: StringValue).Value
+	playerData[currentSaveSlot]["BaseData"]["PlacementInformation"] = basePlacement
+
+	PlayerService.PlayerData:Save(player.UserId)
+
 	BaseService.UnloadBaseForPlayer(player)
+
+	for _, player in pairs(game.Players:GetPlayers()) do
+		NetworkService.Fire("UpdateLeaderboard", player)
+	end
 end
 
 function PlayerService.GetPrefixesForPlayer(player: Player) : {{string | Color3}}

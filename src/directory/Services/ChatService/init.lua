@@ -10,8 +10,6 @@ type ChatMessage = ChatMessage.ChatMessage
 
 if RunService:IsServer() then
 	require(script.Server)
-else
-	require(script.Client)
 end
 
 local UIHolder = ReplicatedStorage:WaitForChild("UIHolder")
@@ -42,6 +40,11 @@ function ChatService.SendMessage(msg: ChatMessage, recipients: {Player})
 	end
 end
 
+function ChatService.SendMessageString(str: string, recipients: {Player})
+	local msg = ChatMessage.new(str)
+
+	ChatService.SendMessage(msg, recipients)
+end
 
 
 

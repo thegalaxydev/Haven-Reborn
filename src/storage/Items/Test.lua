@@ -13,6 +13,7 @@ local TestPlaceable = Placeable.new{
 	Description = "This is a test item.",
 	Tier = 1,
 	Cost = 0,
+	ShopCategory = "Misc",
 	SellPrice = 0
 }
 

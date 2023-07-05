@@ -5,19 +5,18 @@ local Furnace = Directory.Retrieve("Classes/Furnace")
 local BigNumber = Directory.Retrieve("Classes/BigNumber")
 
 local Storage = ReplicatedStorage:FindFirstChild("ModelStorage")
-local Model = Storage:FindFirstChild("Basic Furnace")
+local Model = Storage:FindFirstChild("Santa's Flying Sleigh")
 
 return Furnace.new{
-	Name = "Basic Furnace", 
+	Name = "Santa's Flying Sleigh", 
 	Model = Model,
-	ID = 5,
-	Image = "rbxassetid://205368937",
-	Description = "Basic Upgrader Test",
-	Tier = 1,
-	Cost = 100,
-	SellPrice = 50,
-	ShopCategory = "Furnaces",
-	SellMultiplier = 1,
+	ID = 6,
+	Image = "rbxassetid://13947220495",
+	Description = "Upgrades your ore a jolly x750 during the Christmas season, and x150 otherwise!",
+	Tier = 44,
+	Cost = 0,
+	SellPrice = 0,
+	SellMultiplier = os.date("*t").month == 12 and 750 or 150,
 
 	SellCallback = function(self, hit: BasePart, player: Player)
 		if hit.Name ~= "Drop" then return end

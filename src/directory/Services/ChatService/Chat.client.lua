@@ -3,12 +3,11 @@ game.StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
 
 local Directory = require(ReplicatedStorage:FindFirstChild("Directory"))
 
-local ChatMessage = require(script.Parent.Parent.Parent.Classes.ChatMessage)
+local ChatMessage = require(ReplicatedStorage.Directory.Classes.ChatMessage)
 type ChatMessage = ChatMessage.ChatMessage
 
 local CommandService = Directory.Retrieve("Services/CommandService")
 
-local TextService = game:GetService("TextService")
 local ContextActionService = game:GetService("ContextActionService")
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
@@ -20,21 +19,39 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local Player = game.Players.LocalPlayer
+local GuiService = game:GetService("GuiService")
 
 local UIHolder = ReplicatedStorage:WaitForChild("UIHolder")
 
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
-local Chat = UIHolder:WaitForChild("Chat"):Clone()
-Chat.Parent = PlayerGui
+local Chat = script.Parent
 
+if GuiService:IsTenFootInterface() then
+	Chat.Enabled = false
+end
 
 local Holder = Chat.Holder
+local ChatToggle = Chat.ChatToggle
 local BoxHolder = Holder.BoxHolder
 local ChatGui:ScrollingFrame = Holder.ChatGui
 local TextBox:TextBox = BoxHolder.TextBox
-local Send:TextButton = BoxHolder.Send
+local Send:ImageButton = BoxHolder.Send
 local HighlightLabel : TextLabel = TextBox:FindFirstChild("HighlightLabel") :: TextLabel
+
+ChatToggle.Button.MouseButton1Click:Connect(function()
+	Holder.Visible = not Holder.Visible
+end)
+
+Player.CharacterAdded:Connect(function()
+	Chat = PlayerGui:WaitForChild("Chat")
+	Holder = Chat.Holder
+	BoxHolder = Chat.Holder.BoxHolder
+	ChatGui = Chat.Holder.ChatGui
+	TextBox = Chat.Holder.BoxHolder.TextBox
+	Send = Chat.Holder.BoxHolder.Send
+	HighlightLabel = Chat.Holder.BoxHolder.TextBox:FindFirstChild("HighlightLabel") :: TextLabel	
+end)
 
 local function splitString(inputString: string)
     local arguments = {}
@@ -61,7 +78,7 @@ end
 
 TextBox.PlaceholderText = "To chat press here or press \"/\" key."
 TextBox.RichText = true
-BoxHolder.Size = UDim2.new(1,0, 0, TextBox.TextBounds.Y + 20)
+BoxHolder.Size = UDim2.new(BoxHolder.Size.X.Scale,0, 0, TextBox.TextBounds.Y + 20)
 
 CommandService.Commands = NetworkService.Fire("GetCommands")
 
@@ -76,7 +93,7 @@ function escapeText(str: string) : string
 end
 
 TextBox:GetPropertyChangedSignal("Text"):Connect(function()
-	BoxHolder.Size = UDim2.new(1,0, 0, TextBox.TextBounds.Y + 20)
+	BoxHolder.Size = UDim2.new(BoxHolder.Size.X.Scale,0, 0, TextBox.TextBounds.Y + 20)
 
 	TextBox.Text = TextBox.Text:sub(1, 350)
 	HighlightLabel.Text = escapeText(TextBox.Text)
@@ -89,16 +106,14 @@ TextBox:GetPropertyChangedSignal("Text"):Connect(function()
 	end
 end)
 
-function formatMessage(message: ChatMessage) : string
+function formatName(message: ChatMessage) : string
 	local prefixes = message.Prefixes
-	local suffixes = message.Suffixes
 	local senderSuffixes = message.SenderSuffixes
-
-	local messageText = message.Message
-	local messageColor = message.Color
+	
 	local messageSender = ""
 
 	if message.Sender then
+		print (message.Sender)
 		local senderColor = message.Sender[2]
 		local senderName = message.Sender[1].Name
 
@@ -114,15 +129,6 @@ function formatMessage(message: ChatMessage) : string
 		messagePrefix = messagePrefix .. `<font color="rgb({math.round(color.R * 255)}, {math.round(color.G * 255)}, {math.round(color.B * 255)})">{text}</font>`
 	end
 
-	local messageSuffix = ""
-
-	for _, suffix in ipairs(suffixes) do
-		local text = suffix[1]
-		local color = suffix[2]
-
-		messageSuffix = messageSuffix .. `<font color="rgb({math.round(color.R * 255)}, {math.round(color.G * 255)}, {math.round(color.B * 255)})">{text}</font>`
-	end
-
 	local senderSuffix = ""
 
 	for _, suffix in ipairs(senderSuffixes) do
@@ -132,33 +138,44 @@ function formatMessage(message: ChatMessage) : string
 		senderSuffix = senderSuffix .. `<font color="rgb({math.round(color.R * 255)}, {math.round(color.G * 255)}, {math.round(color.B * 255)})">{text}</font>`
 	end
 
+	local final = messagePrefix .. messageSender .. senderSuffix
+
+	return final
+end
+
+function formatMessage(message: ChatMessage) : string
+	local suffixes = message.Suffixes
+
+	local messageText = message.Message
+	local messageColor = message.Color
+
+	local messageSuffix = ""
+
+	for _, suffix in ipairs(suffixes) do
+		local text = suffix[1]
+		local color = suffix[2]
+
+		messageSuffix = messageSuffix .. `<font color="rgb({math.round(color.R * 255)}, {math.round(color.G * 255)}, {math.round(color.B * 255)})">{text}</font>`
+	end
+
 	local finalMessage = `<font color="rgb({math.round(messageColor.R * 255)}, {math.round(messageColor.G * 255)}, `..
 		`{math.round(messageColor.B * 255)})">{escapeText(messageText)}</font>`
 
-	local final = messagePrefix .. finalMessage.. messageSuffix
-
-	if messageSender ~= "" then
-		final = messagePrefix .. messageSender .. ": " .. finalMessage .. messageSuffix
-	end
-
-	if senderSuffix ~= "" then
-		final = messagePrefix .. messageSender .. senderSuffix .. ": " .. finalMessage .. messageSuffix
-	end
+	local final = finalMessage.. messageSuffix
 	
-
 	return final
 end
 local ReplicationFunctions = {
 	["ReceiveMessage"] = function(message : ChatMessage)
-		local chatMessage : TextLabel = UIHolder.ChatMessageTemplate:Clone()
-		chatMessage.Text = formatMessage(message)
+		local chatMessage = UIHolder.ChatMessageTemplate:Clone()
+		chatMessage.ChatMessage.Text = formatMessage(message)
+		chatMessage.PlayerName.Text = formatName(message)
 		chatMessage.Parent = ChatGui
 
-		if not chatMessage.TextFits then
-			chatMessage.Size = UDim2.new(1, 0, 0, chatMessage.TextBounds.Y)
-		end
+		chatMessage.Size = UDim2.new(1, 0, 0, chatMessage.ChatMessage.TextBounds.Y + 20)
+		chatMessage.ChatMessage.Size = UDim2.new(1, 0, 0, chatMessage.ChatMessage.TextBounds.Y)
 
-		if message.Sender then
+		if message.Sender and message.Sender[1] ~= Player then
 			chatMessage.Name = message.Sender[1].UserId.."-"..HttpService:GenerateGUID()
 			local senderName = message.Sender[1].Name
 			local prefix = ""
@@ -166,13 +183,7 @@ local ReplicationFunctions = {
 				prefix = prefix..prefixInfo[1]
 			end
 
-			local messageSender = Instance.new("TextButton")
-			messageSender.Parent = chatMessage
-			messageSender.Text = prefix..senderName
-			messageSender.TextTransparency = 1
-			messageSender.BackgroundTransparency = 1
-			messageSender.Size = UDim2.new(0, messageSender.TextBounds.X, 0, messageSender.TextBounds.Y)
-			messageSender.Position = UDim2.new(0, 0, 0, 0)
+			local messageSender = chatMessage.PlayerName
 
 			if #ChatGui:GetChildren() > 25 then
 				local oldestMessage = ChatGui:GetChildren()[2]
@@ -187,53 +198,13 @@ local ReplicationFunctions = {
 				TextBox.CursorPosition = string.len(TextBox.Text) + 1
 			end)	
 			ChatGui.CanvasPosition = Vector2.new(0, ChatGui.AbsoluteCanvasSize.Y)
-		end
-	end,
-
-	["ShowItem"] = function(message : ChatMessage, itemName: string)
-		local chatMessage : TextLabel = UIHolder.ChatMessageTemplate:Clone()
-		
-		if message.Sender then
+		elseif message.Sender and message.Sender[1] == Player then
 			chatMessage.Name = message.Sender[1].UserId.."-"..HttpService:GenerateGUID()
+			chatMessage.PlayerName.TextXAlignment = Enum.TextXAlignment.Right
+			chatMessage.ChatMessage.TextXAlignment = Enum.TextXAlignment.Right
 		end
-
-		chatMessage.Text = formatMessage(message)
-		chatMessage.Parent = ChatGui
-
-		if not chatMessage.TextFits then
-			chatMessage.Size = UDim2.new(1, 0, 0, chatMessage.TextBounds.Y)
-		end
-
-		local itemInfo = Instance.new("TextLabel")
-		itemInfo.Parent = chatMessage
-		itemInfo.Text = itemName
-		itemInfo.TextTransparency = 1
-		itemInfo.BackgroundTransparency = 1
-		itemInfo.Size = UDim2.new(0, itemInfo.TextBounds.X, 0, itemInfo.TextBounds.Y)
-		itemInfo.Position = UDim2.new(0,chatMessage.TextBounds.X-itemInfo.TextBounds.X, 0, 0)
-
+	
 		
-		local showFrame = Instance.new("Frame")
-		showFrame.Parent = Chat
-		showFrame.Size = UDim2.new(0, 200, 0, 100)
-		showFrame.Position = UDim2.new(0,itemInfo.AbsolutePosition.X,0,itemInfo.AbsolutePosition.Y + 15)
-		showFrame.Visible = false
-
-		ChatGui.CanvasPosition = Vector2.new(0, ChatGui.AbsoluteCanvasSize.Y)
-
-		if #ChatGui:GetChildren() > 25 then
-			local oldestMessage = ChatGui:GetChildren()[2]
-			if oldestMessage then
-				oldestMessage:Destroy()
-			end
-		end
-
-		itemInfo.MouseEnter:Connect(function()
-			showFrame.Visible = true
-		end)		
-		itemInfo.MouseLeave:Connect(function()
-			showFrame.Visible = false
-		end)
 	end,
 
 	["ClearChat"] = function()
@@ -262,9 +233,7 @@ function sendChat()
 	end
 	 if table.find(CommandService.Commands, command) then
 		NetworkService.Fire("ExecuteCommand", command, args)
-
 		TextBox.Text = ""
-
 
 		return
 	end
@@ -294,10 +263,16 @@ local fadeTimer = 0
 local shouldFade = false
 
 local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, 0, false, 0)
-local BoxFade = TweenService:Create(BoxHolder, tweenInfo, {BackgroundTransparency = 1})
-local HolderFade = TweenService:Create(Holder, tweenInfo, {BackgroundTransparency = 1})
-local SendFade = TweenService:Create(Send, tweenInfo, {TextTransparency = 1})
-local TextBoxFade = TweenService:Create(TextBox, tweenInfo, {TextTransparency = 1})
+
+
+local FadeTweens = {
+	TweenService:Create(BoxHolder, tweenInfo, {BackgroundTransparency = 0.9}),
+	TweenService:Create(Holder, tweenInfo, {BackgroundTransparency = 0.9}),
+	TweenService:Create(Send, tweenInfo, {ImageTransparency = 0.9}),
+	TweenService:Create(TextBox, tweenInfo, {TextTransparency = 0.9}),
+	TweenService:Create(BoxHolder.UIStroke, tweenInfo, {Transparency = 0.9}),
+	TweenService:Create(Holder.UIStroke, tweenInfo, {Transparency = 0.9}),
+}
 
 function IsInBox(box: GuiObject)
 	local MouseLocation = UserInputService:GetMouseLocation()
@@ -311,18 +286,30 @@ end
 
 function fadeChat(shouldFade: boolean)
 	if shouldFade then
-		BoxFade:Play()
-		HolderFade:Play()
-		SendFade:Play()
-		TextBoxFade:Play()
+		for _, tween in pairs(FadeTweens) do
+			tween:Play()
+		end
+
+		for _, message in pairs(ChatGui:GetChildren()) do
+			if message:IsA("Frame") then
+				TweenService:Create(message.ChatMessage, tweenInfo, {BackgroundTransparency = 0.9}):Play()
+			end
+		end
 	else
-		BoxFade:Cancel()
-		HolderFade:Cancel()
-		SendFade:Cancel()
-		TextBoxFade:Cancel()
+		for _, tween in pairs(FadeTweens) do
+			tween:Cancel()
+		end
+
+		for _, message in pairs(ChatGui:GetChildren()) do
+			if message:IsA("Frame") then
+				message.ChatMessage.BackgroundTransparency = 0.75
+			end
+		end
 		BoxHolder.BackgroundTransparency = 0.5
-		Holder.BackgroundTransparency = 0.5
-		Send.TextTransparency = 0
+		Holder.BackgroundTransparency = 0.25
+		Holder.UIStroke.Transparency = 0.2
+		BoxHolder.UIStroke.Transparency = 0
+		Send.ImageTransparency = 0
 		TextBox.TextTransparency = 0
 	end
 end
@@ -341,7 +328,3 @@ RunService:BindToRenderStep("ChatSleep", 1, function(dt: number)
 		fadeChat(false)
 	end	
 end)
-
-
-
-return true

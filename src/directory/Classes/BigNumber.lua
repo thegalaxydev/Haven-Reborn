@@ -342,6 +342,11 @@ end
 function BigNumber:Unserialize(outputType : string?, precision: number?) : (number? | string, string)
 	self:Check()
 
+	-- remove leading zeroes
+	while (#self.Digits > 1) and (self.Digits[1] == 0) do
+		table.remove(self.Digits, 1)
+	end
+
     local num = ""
     if self.Sign == "-" then
         num = "-"
@@ -375,7 +380,6 @@ function BigNumber:Unserialize(outputType : string?, precision: number?) : (numb
                    "Precision must be a positive integer")
         end
 
-
 		local count = #Suffixes
 		
 		local walkback = (#self.Digits - 1) % 3
@@ -395,7 +399,9 @@ function BigNumber:Unserialize(outputType : string?, precision: number?) : (numb
 			end
 			
 			if precision and precision > 1 then
-				num = num .. "." 
+				if self.Digits[2 + walkback] then
+					num = num .. "."
+				end 
 				for i = 2 + walkback, precision + walkback do
 					if self.Digits[i] and self.Digits[i] ~= "0" then
 						num = num .. self.Digits[i]
