@@ -10,10 +10,10 @@ return Conveyor.new{
 	Model = Model,
 	ID = 2,
 	Image = "rbxassetid://1611321834",
-	Description = "Basic Conveyor Test",
+	Description = "We're moving along.",
 	Tier = 1,
-	Cost = 100,
-	ConveyorSpeed = 25,
+	Cost = 25,
+	ConveyorSpeed = 15,
 	ShopCategory = "Upgraders",
-	SellPrice = 50
+	SellPrice = 5
 }

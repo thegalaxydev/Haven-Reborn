@@ -33,18 +33,18 @@ local ReplicationFunctions = {
 				return TextService:FilterStringAsync(message, player.UserId)
 			end)
 
-			if not success then
-				warn("Error filtering message: " .. result)
-				messageObject.Message = ""
-			else
-				messageObject.Message = result:GetChatForUserAsync(recipient.UserId)
+			local text = ""
+
+			if success then
+				text = result:GetChatForUserAsync(recipient.UserId)
 			end
 
 
-			messageObject.Message = result:GetChatForUserAsync(recipient.UserId)
+			messageObject.Message = text
 
-		
+			
 			NetworkService.Fire("ReceiveMessage", recipient, messageObject)
+			NetworkService.Fire("BubbleChat", recipient, player, text)
 		else
 			for _, recipient in pairs(game.Players:getPlayers()) do
 				local filteredMessage = ""
@@ -59,8 +59,8 @@ local ReplicationFunctions = {
 				end
 
 				NetworkService.Fire("ReceiveMessage", recipient, messageObject)
+				NetworkService.Fire("BubbleChat", recipient, player, filteredMessage)
 			end
-			
 		end
 	end,
 

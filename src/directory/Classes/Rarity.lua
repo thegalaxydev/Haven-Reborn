@@ -34,9 +34,9 @@ return {
 	[41] = {['Name'] = "Refined", ['BackgroundColor'] = Color3.fromRGB(255, 108, 198), ['TextColor'] = Color3.fromRGB(242, 242, 83)},
 	[42] = {['Name'] = "Collectible", ['BackgroundColor'] = Color3.fromRGB(189, 103, 195), ['TextColor'] = Color3.fromRGB(25,25,25)},
 	[43] = {['Name'] = "Contraband", ['BackgroundColor'] = Color3.fromRGB(86, 134, 236), ['TextColor'] = Color3.fromRGB(25,25,25)},
-	[44] = {['Name'] = "Vintage", ['BackgroundColor'] = Color3.fromRGB(17, 17, 17), ['TextColor'] = Color3.fromRGB(29, 227, 138)},
-	[45] = {['Name'] = "Exotic", ['BackgroundColor'] = Color3.fromRGB(17, 17, 17), ['TextColor'] = Color3.fromRGB(51, 211, 219)},
-	[46] = {['Name'] = "Relic", ['BackgroundColor'] = Color3.fromRGB(17, 17, 17), ['TextColor'] = Color3.fromRGB(124, 96, 225)},
+	[44] = {['Name'] = "Vintage", ['BackgroundColor'] = Color3.fromRGB(17, 17, 17), ['TextColor'] = Color3.fromRGB(29, 227, 138), ["SwapColors"] = true},
+	[45] = {['Name'] = "Exotic", ['BackgroundColor'] = Color3.fromRGB(17, 17, 17), ['TextColor'] = Color3.fromRGB(51, 211, 219), ["SwapColors"] = true},
+	[46] = {['Name'] = "Relic", ['BackgroundColor'] = Color3.fromRGB(17, 17, 17), ['TextColor'] = Color3.fromRGB(124, 96, 225), ["SwapColors"] = true},
 
 	-- Other
 	[50] = {['Name'] = "Enchanted", ['BackgroundColor'] = Color3.fromRGB(214, 59, 59), ['TextColor'] = Color3.fromRGB(17, 17, 17)},

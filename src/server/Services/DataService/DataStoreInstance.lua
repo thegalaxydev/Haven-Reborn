@@ -16,6 +16,7 @@ export type DataStoreInstance = {
 export type DataStoreParameters = {
 	Name: string,
 	AutoSaveInterval: number?,
+	FailedRetryWaitTime: number?,
 	ShouldAutoSave: boolean?,
 	DefaultData: {[any]: any}?
 }
@@ -27,6 +28,7 @@ function DataStoreInstance.new(params: DataStoreParameters) : DataStoreInstance
 	self.Data = {}
 	self.AutoSaveInterval = params.AutoSaveInterval or 0
 	self.ShouldAutoSave = params.ShouldAutoSave or false
+	self.FailedRetryWaitTime = params.FailedRetryWaitTime or 5
 
 	self.DefaultData = params.DefaultData or {}
 
@@ -80,7 +82,7 @@ function DataStoreInstance.new(params: DataStoreParameters) : DataStoreInstance
 	self.Changed:Connect(function(Index: any, Value: any)
 		
 		if Index == "ShouldAutoSave" and Value == true then
-			if self.AutoSaveTask then
+			if self.AutoSaveTask and coroutine.status(self.AutoSaveTask) ~= "suspended" then
 				task.cancel(self.AutoSaveTask)
 			end
 			self.AutoSaveTask = task.spawn(function()
@@ -128,7 +130,7 @@ function DataStoreInstance:Load(key: string) : ()
 				return
 			end
 
-			task.delay(0, load)
+			task.delay(self.FailedRetryWaitTime, load)
 
 			retries += 1
 		end
@@ -191,7 +193,7 @@ function DataStoreInstance:Save(key: string)
 				return
 			end
 
-			task.delay(0, save)
+			task.delay(self.FailedRetryWaitTime, save)
 
 			retries += 1
 		else
@@ -224,7 +226,7 @@ function DataStoreInstance:Update(key: string, func: () -> ())
 				return
 			end
 
-			task.delay(0, update)
+			task.delay(self.FailedRetryWaitTime, update)
 
 			retries += 1
 		else

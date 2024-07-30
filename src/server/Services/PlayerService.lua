@@ -20,6 +20,7 @@ PlayerService.PlayerData = DataService.CreateDataStoreInstance {
 	Name = "PlayerData",
 	ShouldAutoSave = true,
 	AutoSaveInterval = 60,
+	FailedRetryWaitTime = 5,
 
 	DefaultData = (function()
 		local maxSaveSlots = 10
@@ -50,7 +51,11 @@ PlayerService.PlayerData = DataService.CreateDataStoreInstance {
 					["Gold"] = 0
 				},
 			
-				Inventory = {},
+				Inventory = {
+					{3, 1},
+					{2, 20},
+					{5, 1}
+				},
 			
 				["BaseData"] = {
 					PlacementInformation = {},
@@ -81,14 +86,6 @@ function PlayerService.PlayerAdded(player: Player)
 
 	local PlayerData = PlayerService.PlayerData:Load(player.UserId)
 
-	PlayerData["SaveSlot1"]["Inventory"] = {
-		{3, 1},
-		{2, 20},
-		{4, 1},
-		{5, 1},
-		{6, 1}
-	}
-
 	local PlayerDataLoaded = Instance.new("BoolValue")
 	PlayerDataLoaded.Name = "PlayerDataLoaded"
 	PlayerDataLoaded.Parent = player
@@ -98,7 +95,7 @@ function PlayerService.PlayerAdded(player: Player)
 	CurrentSaveSlot.Value = "SaveSlot1"
 	CurrentSaveSlot.Parent = player
 
-	PlayerData[CurrentSaveSlot.Value]["Money"] = "1000"
+	PlayerData[CurrentSaveSlot.Value]["Money"] = "50"
 
 	local Money = Instance.new("StringValue")
 	Money.Name = "Money"

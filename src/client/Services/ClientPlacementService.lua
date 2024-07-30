@@ -164,10 +164,11 @@ function PlacementService.BeginPlacement(item: Placeable.Placeable)
 				gridRotation = 0
 			end
 		end	
-	end, false, Enum.KeyCode.R)
+	end, true, Enum.KeyCode.R)
 
 	ContextActionService:BindAction("Place", function(actionName: string, userInputState: Enum.UserInputState, input: InputObject)
-		if (userInputState == Enum.UserInputState.Begin) then
+		local mobileTapped = userInputState == Enum.UserInputState.End and input.UserInputType == Enum.UserInputType.Touch
+		if (userInputState == Enum.UserInputState.Begin) or mobileTapped then
 			if PlacementService.IsColliding(ghost) then 
 				print("Collided")
 				return 
@@ -175,6 +176,7 @@ function PlacementService.BeginPlacement(item: Placeable.Placeable)
 
 			for _, item in pairs(base.Parent.Items:GetChildren()) do
 				local itemSelectionBox = item.Hitbox:FindFirstChild("SelectionBox")
+				if not itemSelectionBox then continue end
 				itemSelectionBox.Adornee = item.Hitbox
 				itemSelectionBox.Transparency = 0
 				itemSelectionBox.SurfaceTransparency= 0.8
@@ -193,13 +195,19 @@ function PlacementService.BeginPlacement(item: Placeable.Placeable)
 				NetworkService.Fire("PlaceItem", item.Name,  cf)
 			end
 		end		
-	end, false, Enum.UserInputType.MouseButton1)
+	end, false, Enum.UserInputType.MouseButton1, Enum.UserInputType.Touch)
 
 	ContextActionService:BindAction("Cancel", function(actionName: string, userInputState: Enum.UserInputState, input: InputObject)
 		if (userInputState == Enum.UserInputState.Begin) then
 			PlacementService.CancelPlacement()
 		end
-	end, false, Enum.KeyCode.Q)
+	end, true, Enum.KeyCode.Q)
+
+	ContextActionService:SetImage("Cancel", "rbxassetid://13970202222")
+	ContextActionService:SetPosition("Cancel", UDim2.new(0, 0, 0, 50))
+
+	ContextActionService:SetImage("Rotate", "rbxassetid://13970210856")
+	ContextActionService:SetPosition("Rotate", UDim2.new(0, 0, 0, 100))
 
 	RunService:BindToRenderStep("PlaceItem", 1, function()
 		if PlacementService.IsColliding(ghost) then 

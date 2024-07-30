@@ -10,14 +10,14 @@ return Dropper.new{
 	Model = Model,
 	ID = 3,
 	Image = "rbxassetid://205328631",
-	Description = "Basic Mine Test",
+	Description = "The first mine you can buy!",
 	Tier = 1,
 	Cost = 100,
 	DropRate = 0.5,
 	DropSize = 1,
 	ShopCategory = "Droppers",
-	DropWorth = 100,
-	SellPrice = 50,
+	DropWorth = 1,
+	SellPrice = 20,
 
 	DropCallback = function(self, dropPart: BasePart, player: Player)
 		local plot = (player:FindFirstChild("PlayerPlot") :: ObjectValue).Value
@@ -42,6 +42,7 @@ return Dropper.new{
 			worth.Value = self.DropWorth
 
 			drop.Touched:Connect(function(hit)
+				if not hit then return end
 				if hit.Name == "Base" or hit.Parent.Name == "Map" then
 					drop:Destroy()
 				end

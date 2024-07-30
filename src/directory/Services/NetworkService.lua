@@ -3,8 +3,12 @@ local NetworkService = {}
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-NetworkService.ClientCallbacks = {}
-NetworkService.ServerCallbacks = {}
+local Event = require(ReplicatedStorage.Directory.Classes.Event)
+
+NetworkService.Callbacks = {}
+NetworkService.Connections = {}
+
+NetworkService.Events = {}
 
 if RunService:IsServer() then
 	local Remotes = Instance.new("Folder")
@@ -16,11 +20,9 @@ if RunService:IsServer() then
 	ServerReplicator.Parent = Remotes
 
 	ServerReplicator.OnServerInvoke = function(player: Player, name: string, ...)
-		print(name, NetworkService.ServerCallbacks)
-
-		if not NetworkService.ServerCallbacks[name] then return nil end
+		if not NetworkService.Callbacks[name] then return nil end
 		
-		return NetworkService.ServerCallbacks[name](player, ...)
+		return NetworkService.Callbacks[name](player, ...)
 	end
 
 	local ClientReplicator = Instance.new("RemoteEvent")
@@ -34,22 +36,33 @@ local ClientReplicator = Remotes:WaitForChild("ClientReplicator")
 
 if RunService:IsClient() then
 	ClientReplicator.OnClientEvent:Connect(function(name: string, ...)
-		if NetworkService.ClientCallbacks[name] then
-			NetworkService.ClientCallbacks[name](...)
+		if NetworkService.Callbacks[name] then
+			NetworkService.Callbacks[name](...)
 		end
 	end)
 end
 
 
 function NetworkService.Create(name: string, callback: (any) -> any)
-	if RunService:IsServer() then
-		NetworkService.ServerCallbacks[name] = callback
-	else
-		NetworkService.ClientCallbacks[name] = callback
+	NetworkService.Callbacks[name] = callback
+end
+
+function NetworkService.Connect(name: string, callback: (any) -> any)
+	if not NetworkService.Connections[name] then
+		NetworkService.Connections[name] = Event.new()
+	end
+
+	NetworkService.Connections[name]:Connect(callback)
+end
+
+function NetworkService.FireBind(name: string, ...)
+	if NetworkService.Connections[name] then
+		NetworkService.Connections[name]:Fire(...)
 	end
 end
 
 function NetworkService.Fire(name: string, ...) : any?
+
 	if RunService:IsServer() then
 		local args = {...}
 		ClientReplicator:FireClient(args[1], name, table.unpack(args, 2))
@@ -57,6 +70,13 @@ function NetworkService.Fire(name: string, ...) : any?
 		return nil
 	else
 		return ServerReplicator:InvokeServer(name, ...)
+	end
+end
+
+function NetworkService.FireAllClients(name: string, ...)
+	if RunService:IsServer() then
+		local args = {...}
+		ClientReplicator:FireAllClients(name, table.unpack(args))
 	end
 end
 

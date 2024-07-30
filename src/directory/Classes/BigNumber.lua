@@ -18,7 +18,7 @@ local Suffixes = {
 	"OTGNTL", "UOTGNTL", "DOTGNTL", "TOTGNTL", "qTOTGNTL", "QnOTGNTL", "ssOTGNTL", "SpOTGNTL", "OOTGNTL", "NVOTGNTL",
 	"NONGNTL", "UNONGNTL", "DNONGNTL", "TNONGNTL", "qTNONGNTL", "QnNONGNTL", "ssNONGNTL", "SpNONGNTL", "OTNONGNTL", "NONONGNTL",
 	"CENT", "UNCENT", "DECENT", "UNDECENT", "VIGINT", "UNVIGINT", "TRIGINT", "UNTRIGINT", "QUADRAGINT", "UNQUADRAGINT",
-} 
+}
 
 function BigNumber.new(num: string? | number?)
 	local self = {}

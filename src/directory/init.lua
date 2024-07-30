@@ -2,7 +2,6 @@ local Directory = {}
 
 Directory.Cache = {}
 
-
 function Directory.Retrieve<T>(path: string) : (T? | Instance, string)
 	local split = string.split(path, "/")
 	local current = script

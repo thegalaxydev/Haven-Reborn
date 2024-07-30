@@ -182,7 +182,7 @@ NetworkService.Create("SellItem", function(player: Player, id: number, item: Mod
 	return true
 end)
 
-NetworkService.Create("BuyItem", function(player: Player, item)
+NetworkService.Create("BuyItem", function(player: Player, item, numberOfItems: number?)
 	local itemData = ItemDirectory[item.ID]
 	if itemData == nil then return end
 
@@ -197,7 +197,7 @@ NetworkService.Create("BuyItem", function(player: Player, item)
 	if not currentSaveSlot then return false end
 
 	local money = BigNumber.new(playerData[currentSaveSlot.Value].Money)
-	local price = BigNumber.new(itemData.Cost)
+	local price = BigNumber.new(itemData.Cost * numberOfItems or 1)
 
 	if money < price then return false end
 
@@ -214,8 +214,8 @@ NetworkService.Create("BuyItem", function(player: Player, item)
 		local amount = info[2]
 		
 		if itemId == item.ID then
-			playerData[currentSaveSlot.Value].Inventory[index][2] += 1
-			amount += 1
+			playerData[currentSaveSlot.Value].Inventory[index][2] += numberOfItems or 1
+			amount += numberOfItems or 1
 			itemFound = true
 		end
 
@@ -227,11 +227,11 @@ NetworkService.Create("BuyItem", function(player: Player, item)
 	if not itemFound then
 		print("Creating item")
 		table.insert(playerData[currentSaveSlot.Value].Inventory, {
-			[1] = item.ID, [2] = 1
+			[1] = item.ID, [2] = numberOfItems or 1
 		})
 
 		table.insert(inventory, {
-			[1] = item.ID, [2] = 1
+			[1] = item.ID, [2] = numberOfItems or 1
 		})
 	end
 

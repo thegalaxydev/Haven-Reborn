@@ -13,11 +13,22 @@ local UserInputService = game:GetService("UserInputService")
 local Player = game.Players.LocalPlayer
 local Mouse = Player:GetMouse()
 local Main = Player.PlayerGui:WaitForChild("Main")
+Main.Enabled = true
+local UIScale = Main.UIScale
 
-local HUD = Main.HUD
+local function getScale()
+    local viewportSize = workspace.CurrentCamera.ViewportSize
+    return math.min(viewportSize.X / 1920, viewportSize.Y / 1080)
+end
 
-local Left = HUD.Left
-local Right = HUD.Right
+UIScale.Scale = getScale()
+
+
+Main:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+	UIScale.Scale = getScale()
+end)
+
+local Left = Main.LeftHUD
 
 local Leaderboard = Main.Leaderboard
 local PlayerLeaderSample = Leaderboard.Sample.PlayerSample
@@ -25,7 +36,7 @@ local PlayerList = Leaderboard.Holder.PlayerList
 
 local ControlsDisabled = false
 
-local InventoryButton = Left.Inventory.Holder.Button
+local InventoryButton = Left.Inventory.Button
 
 local ItemDirectory = Directory.Retrieve("ItemDirectory")
 
@@ -93,7 +104,7 @@ function updateMoney()
 
 	if oldMoney then
 		local change = value - oldMoney
-		print(change)
+		if change <= BigNumber.new(0) then return end
 		oldMoney = value
 
 		local changeNum, changeSuffix = change:Unserialize("mh-notation", 1)
@@ -136,6 +147,14 @@ UserInputService.GamepadConnected:Connect(function()
 			gui.Visible = true
 		end
 	end
+end)
+
+Inventory.Close.MouseButton1Click:Connect(function()
+	Inventory.Visible = false
+end)
+
+Shop.Close.MouseButton1Click:Connect(function()
+	Shop.Visible = false
 end)
 
 
@@ -182,6 +201,14 @@ end
 
 function UIService.MoveSelected()
 	if not selectedItem then return end
+
+	local id = getItemID(selectedItem.Name)
+	if not id then return end
+
+	UIService.WithdrawSelected()
+
+	local item = ItemDirectory[id]
+	ClientPlacementService.BeginPlacement(item)
 end
 
 function UIService.SelectItem(item)
@@ -231,11 +258,12 @@ function UIService.SelectItem(item)
 end
 
 function UIService.HighlightItem(item)
+	UIService.UnhighlightItem()
 	if selectedItem then 
-		UIService.UnhighlightItem()
 		return 
 	end
-	if highlightedItem then return end
+
+	
 
 	local selectionBox = Instance.new("SelectionBox")
 	selectionBox.Name = "HighlightBox"
@@ -296,6 +324,17 @@ function UIService.DeselectItem()
 
 		if selectedItem.Hitbox:FindFirstChild("SelectBox") then
 			selectedItem.Hitbox.SelectBox:Destroy()
+		end
+	end
+
+	local base = Player.PlayerPlot.Value
+	for _, item in pairs(base.Items:GetChildren()) do
+		if item.Hitbox:FindFirstChild("InfoGui") then
+			item.Hitbox.InfoGui:Destroy()
+		end
+
+		if item.Hitbox:FindFirstChild("HighlightBox") then
+			item.Hitbox.HighlightBox:Destroy()
 		end
 	end
 
@@ -427,31 +466,27 @@ end
 
 function UIService.ToggleHUD(bool: boolean)
 	if not bool then
-		Left:TweenPosition(UDim2.new(-0.5, 0, 0.5, 0), "Out", "Quad", 0.5, true)
-		Right:TweenPosition(UDim2.new(1.5, 0, 0.5, 0), "Out", "Quad", 0.5, true)
+		Left:TweenPosition(UDim2.new(0, -310, 0, 528), "Out", "Quad", 0.5, true)
+		--Right:TweenPosition(UDim2.new(1.5, 0, 0.5, 0), "Out", "Quad", 0.5, true)
 		
 		Inventory.Visible = false
 		ControlsDisabled = true
 	else
-		Left:TweenPosition(UDim2.new(0, 0, 0.5, 0), "Out", "Quad", 0.5, true)
-		Right:TweenPosition(UDim2.new(1, 0, 0.5, 0), "Out", "Quad", 0.5, true)	
+		Left:TweenPosition(UDim2.new(0, 13, 0, 528), "Out", "Quad", 0.5, true)
+		--Right:TweenPosition(UDim2.new(1, 0, 0.5, 0), "Out", "Quad", 0.5, true)	
 
 		ControlsDisabled = false
 	end
 end
 
 function UpdateShopInfo(item)
+	ShopInfo.Visible = true
 	ShopInfo.ItemImage.Image = item.Image
-	ShopInfo.Rarity.Text = Rarity[item.Tier].Name
-	ShopInfo.Rarity.TextColor3 = Rarity[item.Tier].TextColor
-	ShopInfo.Rarity.BackgroundColor3 = Rarity[item.Tier].BackgroundColor
 	ShopInfo.Description.Text = item.Description
 	ShopInfo.ItemName.Text = item.Name
 	ShopInfo.Cost.Text = item.Cost
 
 	CurrentShopItem = item
-
-
 end
 
 Buy.MouseButton1Click:Connect(function()
@@ -460,26 +495,25 @@ Buy.MouseButton1Click:Connect(function()
 		return 
 	end
 
-	NetworkService.Fire("BuyItem", CurrentShopItem)
+	NetworkService.Fire("BuyItem", CurrentShopItem, tonumber(BuyAmount.Text))
 end)
 
-ShopInfo.Amount:GetPropertyChangedSignal("Text"):Connect(function()
-	ShopInfo.Amount.Text = string.gsub(ShopInfo.Amount.Text, "%D", "")
+BuyAmount:GetPropertyChangedSignal("Text"):Connect(function()
+	BuyAmount.Text = string.gsub(BuyAmount.Text, "%D", "")
 
-	local amount = tonumber(ShopInfo.Amount.Text)
+	local amount = tonumber(BuyAmount.Text)
 
 	if not amount then
-		ShopInfo.Amount.Text = 1
 		return
 	end
 
 	if amount > 999 then
-		ShopInfo.Amount.Text = 999
+		BuyAmount.Text = 999
 		return
 	end
 
 	if amount < 1 then
-		ShopInfo.Amount.Text = 1
+		BuyAmount.Text = 1
 		return
 	end
 end)
@@ -523,6 +557,46 @@ local function UpdateShop()
 		SortShop()
 	end
 end
+
+Shop.Info.Cancel.MouseButton1Click:Connect(function()
+	ShopInfo.Visible = false
+end)
+
+
+BuyAmount.Up.MouseButton1Click:Connect(function()
+
+	local amount = tonumber(BuyAmount.Text)
+
+	if not amount then
+		return
+	end
+
+	BuyAmount.Text = amount + 1
+
+	if amount > 999 then
+		BuyAmount.Text = 999
+		return
+	end
+end)
+
+BuyAmount.Down.MouseButton1Click:Connect(function()
+
+	local amount = tonumber(BuyAmount.Text)
+
+	if not amount then
+		return
+	end
+
+	BuyAmount.Text = amount - 1
+
+	if amount < 1 then
+		BuyAmount.Text = 1
+		return
+	end
+end)
+
+
+
 
 NetworkService.Create("UpdateInventory", function(inventory: {Placeable.Placeable})
 	for _, item in pairs(ItemHolder:GetChildren()) do
@@ -608,7 +682,7 @@ InventoryButton.MouseButton1Click:Connect(function()
 	UIService.Toggle("Inventory")
 end)
 
-Left.Shop.Holder.Button.MouseButton1Click:Connect(function()
+Left.Shop.Button.MouseButton1Click:Connect(function()
 	UIService.Toggle("Shop")
 end)
 

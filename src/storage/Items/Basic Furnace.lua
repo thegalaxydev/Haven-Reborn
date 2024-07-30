@@ -12,10 +12,10 @@ return Furnace.new{
 	Model = Model,
 	ID = 5,
 	Image = "rbxassetid://205368937",
-	Description = "Basic Upgrader Test",
+	Description = "A basic furnace. It's not very good.",
 	Tier = 1,
 	Cost = 100,
-	SellPrice = 50,
+	SellPrice = 20,
 	ShopCategory = "Furnaces",
 	SellMultiplier = 1,
 

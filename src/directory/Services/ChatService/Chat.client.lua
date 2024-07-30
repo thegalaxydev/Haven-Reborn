@@ -28,7 +28,13 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 local Chat = script.Parent
 
 if GuiService:IsTenFootInterface() then
-	Chat.Enabled = false
+	Chat.Visible = false
+end
+
+local function getScale()
+	local viewportSize = workspace.CurrentCamera.ViewportSize
+
+	return math.min(1- ((1-math.min((viewportSize.X * (viewportSize.X / viewportSize.Y)) / 1920, viewportSize.Y / 1080)) * 0.5), 1)
 end
 
 local Holder = Chat.Holder
@@ -78,7 +84,7 @@ end
 
 TextBox.PlaceholderText = "To chat press here or press \"/\" key."
 TextBox.RichText = true
-BoxHolder.Size = UDim2.new(BoxHolder.Size.X.Scale,0, 0, TextBox.TextBounds.Y + 20)
+BoxHolder.Size = UDim2.new(0, BoxHolder.Size.X.Offset, 0, TextBox.TextBounds.Y + (10 / getScale()))
 
 CommandService.Commands = NetworkService.Fire("GetCommands")
 
@@ -93,10 +99,14 @@ function escapeText(str: string) : string
 end
 
 TextBox:GetPropertyChangedSignal("Text"):Connect(function()
-	BoxHolder.Size = UDim2.new(BoxHolder.Size.X.Scale,0, 0, TextBox.TextBounds.Y + 20)
 
 	TextBox.Text = TextBox.Text:sub(1, 350)
 	HighlightLabel.Text = escapeText(TextBox.Text)
+
+	if not TextBox.TextFits then
+		BoxHolder.Size = UDim2.new(0, BoxHolder.Size.X.Offset, 0, TextBox.TextBounds.Y + (10 / getScale()))
+	end
+
 
 	local args = splitString(TextBox.Text)
 
@@ -165,15 +175,32 @@ function formatMessage(message: ChatMessage) : string
 	
 	return final
 end
+
+ChatGui.ChildAdded:Connect(function()
+	local YSize = 0
+	for _, child in ipairs(ChatGui:GetChildren()) do
+		if not child:IsA("GuiObject") then continue end
+		YSize += child.Size.Y.Offset + 5
+	end
+
+	ChatGui.CanvasSize = UDim2.new(0, 0, 0, YSize + 50)
+end)
+
+function createChatText(message)
+	local chatMessage = UIHolder.ChatMessageTemplate:Clone()
+	chatMessage.ChatMessage.Text = ""
+	chatMessage.PlayerName.Text = formatName(message)
+	chatMessage.Parent = ChatGui
+
+	chatMessage.ChatMessage.Size = UDim2.new(1, 0, 0, chatMessage.ChatMessage.TextBounds.Y + (20 / getScale()))
+	chatMessage.Size = UDim2.new(1, 0, 0, chatMessage.ChatMessage.Size.Y.Offset + chatMessage.PlayerName.TextBounds.Y + (20 / getScale()))
+
+	return chatMessage
+end
+
 local ReplicationFunctions = {
 	["ReceiveMessage"] = function(message : ChatMessage)
-		local chatMessage = UIHolder.ChatMessageTemplate:Clone()
-		chatMessage.ChatMessage.Text = formatMessage(message)
-		chatMessage.PlayerName.Text = formatName(message)
-		chatMessage.Parent = ChatGui
-
-		chatMessage.Size = UDim2.new(1, 0, 0, chatMessage.ChatMessage.TextBounds.Y + 20)
-		chatMessage.ChatMessage.Size = UDim2.new(1, 0, 0, chatMessage.ChatMessage.TextBounds.Y)
+		local chatMessage = createChatText(message)
 
 		if message.Sender and message.Sender[1] ~= Player then
 			chatMessage.Name = message.Sender[1].UserId.."-"..HttpService:GenerateGUID()
@@ -205,6 +232,12 @@ local ReplicationFunctions = {
 		end
 	
 		
+	end,
+
+	["BubbleChat"] = function(player: Player, str: string)
+		if not player.Character then return end
+
+		game:GetService("Chat"):Chat(player.Character, str, Enum.ChatColor.White)
 	end,
 
 	["ClearChat"] = function()
@@ -270,8 +303,6 @@ local FadeTweens = {
 	TweenService:Create(Holder, tweenInfo, {BackgroundTransparency = 0.9}),
 	TweenService:Create(Send, tweenInfo, {ImageTransparency = 0.9}),
 	TweenService:Create(TextBox, tweenInfo, {TextTransparency = 0.9}),
-	TweenService:Create(BoxHolder.UIStroke, tweenInfo, {Transparency = 0.9}),
-	TweenService:Create(Holder.UIStroke, tweenInfo, {Transparency = 0.9}),
 }
 
 function IsInBox(box: GuiObject)
@@ -307,8 +338,6 @@ function fadeChat(shouldFade: boolean)
 		end
 		BoxHolder.BackgroundTransparency = 0.5
 		Holder.BackgroundTransparency = 0.25
-		Holder.UIStroke.Transparency = 0.2
-		BoxHolder.UIStroke.Transparency = 0
 		Send.ImageTransparency = 0
 		TextBox.TextTransparency = 0
 	end
